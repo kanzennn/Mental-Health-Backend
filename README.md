@@ -123,8 +123,20 @@ cp .env.example .env
 
 ## Menjalankan Aplikasi
 
+**Lokal:**
 ```bash
 uvicorn app.main:app --reload
+```
+
+**Docker:**
+```bash
+docker build -t mental-health-backend .
+docker run -p 8000:8000 --env-file .env mental-health-backend
+```
+
+**Docker Compose:**
+```bash
+docker compose up -d
 ```
 
 Aplikasi berjalan di `http://localhost:8000`.
@@ -141,6 +153,34 @@ alembic upgrade head
 
 # Rollback ke versi sebelumnya
 alembic downgrade -1
+```
+
+---
+
+## Deployment
+
+Push ke branch `main` akan otomatis memicu GitHub Actions pipeline:
+
+1. Build Docker image dan push ke `ghcr.io/kanzennn/mental-health-backend`
+2. SSH ke VPS dan restart container `app` tanpa mematikan database
+
+**Secrets yang perlu diset di GitHub repository:**
+
+| Secret | Keterangan |
+|--------|------------|
+| `CR_PAT` | GitHub Personal Access Token (scope: `read:packages`) |
+| `VPS_HOST` | IP atau domain VPS |
+| `VPS_USER` | Username SSH |
+| `VPS_SSH_KEY` | Private key SSH |
+| `VPS_PORT` | Port SSH (opsional, default 22) |
+
+**Setup awal di VPS (sekali saja):**
+```bash
+mkdir -p /opt/mental-health/backend
+cd /opt/mental-health/backend
+# copy .env dan docker-compose.yml ke direktori ini
+docker compose up -d db
+docker compose exec app alembic upgrade head
 ```
 
 ---
